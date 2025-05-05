@@ -45,6 +45,17 @@ with tab1:
         state_tax = st.slider("State Tax Rate", 0, 15, 6) / 100
         retirement = st.slider("401(k) Contribution %", 0, 20, 5) / 100
 
+        # --- Monthly Deductions Inside col1 ---
+        st.markdown("### 🐝 Monthly Deductions")
+        items = list(deductions.items()) if 'deductions' in locals() else []
+        if items:
+            row1, row2 = st.columns(3), st.columns(3)
+            for i in range(3):
+                row1[i].metric(items[i][0], f"${items[i][1]:,.2f}")
+            for i in range(3, 6):
+                row2[i - 3].metric(items[i][0], f"${items[i][1]:,.2f}")
+            st.markdown(f"**Total Deductions:** <span style='color: green;'>${sum(deductions.values()):,.2f}</span> / month", unsafe_allow_html=True)
+
     with col2:
         insurance = st.number_input("Monthly Health Insurance ($)", min_value=0, value=300, step=25)
 
@@ -71,16 +82,6 @@ with tab1:
         st.metric("Net Monthly Income (After Deductions)", f"${monthly_net:,.2f}")
 
     income_left = monthly_net
-
-    st.markdown("### 🐝 Monthly Deductions")
-    with st.container():
-        row1, row2 = st.columns(3), st.columns(3)
-        items = list(deductions.items())
-        for i in range(3):
-            row1[i].metric(items[i][0], f"${items[i][1]:,.2f}")
-        for i in range(3, 6):
-            row2[i - 3].metric(items[i][0], f"${items[i][1]:,.2f}")
-        st.markdown(f"**Total Deductions:** <span style='color: green;'>${sum(deductions.values()):,.2f}</span> / month", unsafe_allow_html=True)
 
 # (Tab 2–4 remain unchanged)
 # ...
