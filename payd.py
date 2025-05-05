@@ -74,10 +74,12 @@ with tab1:
 
     st.markdown("### 🐝 Monthly Deductions")
     with st.container():
-        dcol1, dcol2 = st.columns([1, 1])
+        row1, row2 = st.columns(3), st.columns(3)
         items = list(deductions.items())
-        for i, (label, val) in enumerate(items):
-            (dcol1 if i < 3 else dcol2).metric(label, f"${val:,.2f}")
+        for i in range(3):
+            row1[i].metric(items[i][0], f"${items[i][1]:,.2f}")
+        for i in range(3, 6):
+            row2[i - 3].metric(items[i][0], f"${items[i][1]:,.2f}")
         st.markdown(f"**Total Deductions:** <span style='color: green;'>${sum(deductions.values()):,.2f}</span> / month", unsafe_allow_html=True)
 
 # (Tab 2–4 remain unchanged)
