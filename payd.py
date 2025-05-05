@@ -46,11 +46,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- Main Tabs ---
-tab1, tab2, tab3, tab4 = st.tabs(["📜 Income & Deductions", "📦 Expenses", "💳 Credit Cards", "📊 Results"])
+tab1, tab2, tab3, tab4 = st.tabs(["🧾 Income & Deductions", "📦 Expenses", "💳 Credit Cards", "📊 Results"])
 
 # ----------------- TAB 1 -------------------
 with tab1:
-    st.header("📜 Step 1: Income & Deductions")
+    st.header("🧾 Step 1: Income & Deductions")
     col1, col2, col3 = st.columns([2, 1, 1])
 
     with col1:
@@ -62,13 +62,16 @@ with tab1:
     with col2:
         insurance = st.number_input("Monthly Health Insurance ($)", min_value=0, value=300, step=25)
 
+    # --- Calculations ---
     retire_contrib = salary * retirement
     taxable = salary - retire_contrib
     ss = min(taxable, 168600) * 0.062
     medicare = taxable * 0.0145
     fed = taxable * fed_tax
     state = taxable * state_tax
+    monthly_income = salary / 12
     monthly_net = (salary - fed - state - ss - medicare - retire_contrib) / 12 - insurance
+
     deductions = {
         "Federal Tax": fed / 12,
         "State Tax": state / 12,
@@ -77,18 +80,24 @@ with tab1:
         "401(k)": retire_contrib / 12,
         "Insurance": insurance
     }
+
     income_left = monthly_net
 
-    with col1:
-        st.subheader("💸 Monthly Deductions")
-        for label, val in deductions.items():
-            st.metric(label, f"${val:,.2f}")
-        st.markdown(f"**Total Deductions:** `${sum(deductions.values()):,.2f}` / month")
-
+    # --- Net Income Overview ---
     with col3:
         st.subheader("📈 Net Income Overview")
-        st.metric("Net Monthly Income", f"${monthly_net:,.2f}")
-        st.metric("Net After Expenses", f"${monthly_net:,.2f}")  # Placeholder
+        st.metric("Monthly Income (Before Deductions)", f"${monthly_income:,.2f}")
+        st.metric("Net Monthly Income (After Deductions)", f"${monthly_net:,.2f}")
+
+    # --- Monthly Deductions ---
+    st.markdown("### 🐝 Monthly Deductions")
+    d1, d2 = st.columns(2)
+    for i, (label, val) in enumerate(deductions.items()):
+        if i < 3:
+            d1.metric(label, f"${val:,.2f}")
+        else:
+            d2.metric(label, f"${val:,.2f}")
+    st.markdown(f"**Total Deductions:** `${sum(deductions.values()):,.2f}` / month")
 
 # ----------------- TAB 2 -------------------
 with tab2:
@@ -111,8 +120,7 @@ with tab2:
     st.markdown(f"### 💰 Total Monthly Expenses: `${total_exp:,.2f}`")
     card_pct = st.slider("% of expenses charged to credit", 0, 100, 50) / 100
 
-    with col3:
-        st.metric("Updated Net After Expenses", f"${income_left:,.2f}")
+    st.metric("Updated Net After Expenses", f"${income_left:,.2f}")
 
 # ----------------- TAB 3 -------------------
 with tab3:
