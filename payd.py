@@ -7,155 +7,205 @@ from openai import OpenAI
 # Set OpenAI API key from Streamlit secrets
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# --- Global Design Polish ---
+# --- Global Page Config ---
+st.set_page_config(page_title="Pay’d • Smart Credit Planning", page_icon="💳", layout="wide")
+
+# --- Custom Polished UI ---
 st.markdown("""
 <style>
-    html, body, [class*="css"]  {
-        font-family: 'Inter', sans-serif;
-        font-size: 15px;
-    }
-    h1, h2, h3, h4 {
-        font-weight: 600;
-    }
-    .block-container {
-        padding: 2rem 3rem;
-    }
-    .stTabs [data-baseweb="tab"] {
-        font-size: 1rem;
-        padding: 1rem 1.5rem;
-    }
-    .stMetric label {
-        font-weight: 600;
-    }
-    .stDataFrame {
-        border: 1px solid #ddd;
-        border-radius: 10px;
-    }
+body {
+    background-color: #f8fafc;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Rounded containers and soft shadows */
+div[data-testid="stForm"], .stButton > button, .stNumberInput, .stTextInput, .stSlider, .stTabs, .stMetric, .stDataFrame {
+    border-radius: 12px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* Tabs Styling */
+div[data-baseweb="tab"] button {
+    font-weight: 600;
+    font-size: 16px;
+    padding: 0.5rem 1rem;
+}
+
+/* Metrics */
+.stMetric label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #555;
+}
+
+h1, h2, h3, h4 {
+    font-weight: 700;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Tabs (safe for all platforms) ---
-tab1, tab2, tab3, tab4 = st.tabs([
-    "Step 1: Income & Deductions",
-    "Step 2: Expenses",
-    "Step 3: Credit Cards",
-    "Step 4: Results"
-])
+# --- Welcome Banner ---
+st.markdown("""
+<div style='padding: 2rem; border-radius: 14px; background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #d0d0d0;'>
+    <h1 style='margin-bottom:0;'>💳 Pay’d: Your Personalized Credit Strategy</h1>
+    <p style='margin-top:0.5rem; font-size: 1.1rem;'>Smarter payoff planning. Real results. Designed for people who want to crush debt without compromising lifestyle.</p>
+</div>
+""", unsafe_allow_html=True)
 
+# --- Main Tabs ---
+tab1, tab2, tab3, tab4 = st.tabs(["🧾 Income & Deductions", "📦 Expenses", "💳 Credit Cards", "📊 Results"])
+
+# ----------------- TAB 1 -------------------
 with tab1:
-    st.subheader("Income & Deductions")
+    st.header("🧾 Step 1: Income & Deductions")
     col1, col2 = st.columns([2, 1])
     with col1:
-        salary = st.number_input("Annual Gross Salary ($)", min_value=0, value=45000, step=1000)
-        state_tax = st.slider("State Tax Rate", 0, 15, 6, step=1) / 100
-        fed_tax = st.slider("Federal Tax Rate", 0, 37, 12, step=1) / 100
-        retirement_pct = st.slider("401(k) Contribution", 0, 20, 5, step=1) / 100
-
+        salary = st.number_input("Annual Gross Salary ($)", min_value=0, value=60000, step=1000)
+        fed_tax = st.slider("Federal Tax Rate", 0, 37, 12) / 100
+        state_tax = st.slider("State Tax Rate", 0, 15, 6) / 100
+        retirement = st.slider("401(k) Contribution %", 0, 20, 5) / 100
     with col2:
-        health_insurance = st.number_input("Health Insurance Deduction ($)", min_value=0, value=300, step=25)
-        retirement_contrib = salary * retirement_pct
-        taxable_salary = salary - retirement_contrib
-        ss_tax = min(taxable_salary, 168600) * 0.062
-        medicare_tax = taxable_salary * 0.0145
-        federal_tax = taxable_salary * fed_tax
-        state_tax_amt = taxable_salary * state_tax
+        insurance = st.number_input("Monthly Health Insurance ($)", min_value=0, value=300, step=25)
 
-        total_monthly_deductions = sum([
-            federal_tax / 12,
-            state_tax_amt / 12,
-            ss_tax / 12,
-            medicare_tax / 12,
-            retirement_contrib / 12,
-            health_insurance
-        ])
+        retire_contrib = salary * retirement
+        taxable = salary - retire_contrib
+        ss = min(taxable, 168600) * 0.062
+        medicare = taxable * 0.0145
+        fed = taxable * fed_tax
+        state = taxable * state_tax
 
-        monthly_net_income = (salary - federal_tax - state_tax_amt - ss_tax - medicare_tax - retirement_contrib) / 12 - health_insurance
-        income_after_expenses = monthly_net_income
+        monthly_net = (salary - fed - state - ss - medicare - retire_contrib) / 12 - insurance
+        deductions = {
+            "Federal Tax": fed / 12,
+            "State Tax": state / 12,
+            "SS Tax": ss / 12,
+            "Medicare": medicare / 12,
+            "401(k)": retire_contrib / 12,
+            "Insurance": insurance
+        }
+        income_left = monthly_net
 
-        st.markdown("#### Monthly Deductions Summary")
-        st.markdown(f"""
-        <div style='background-color: #f9f9f9; padding: 1rem; border-radius: 10px; border: 1px solid #ddd;'>
-            <b>Federal Tax:</b> ${federal_tax / 12:,.2f}<br>
-            <b>State Tax:</b> ${state_tax_amt / 12:,.2f}<br>
-            <b>Social Security:</b> ${ss_tax / 12:,.2f}<br>
-            <b>Medicare:</b> ${medicare_tax / 12:,.2f}<br>
-            <b>401(k):</b> ${retirement_contrib / 12:,.2f}<br>
-            <b>Health Insurance:</b> ${health_insurance:,.2f}<br>
-            <hr>
-            <h4 style='color: #d32f2f;'>${total_monthly_deductions:,.2f} / mo</h4>
-        </div>
-        """, unsafe_allow_html=True)
+        st.subheader("💸 Deductions Overview")
+        for label, val in deductions.items():
+            st.metric(label, f"${val:,.2f}")
+        st.markdown(f"**Total Deductions:** `${sum(deductions.values()):,.2f}` / month")
 
+# ----------------- TAB 2 -------------------
 with tab2:
-    st.subheader("Monthly Expenses")
+    st.header("📦 Step 2: Monthly Expenses")
     if "expenses" not in st.session_state:
         st.session_state.expenses = {}
-    with st.form("expense_form", clear_on_submit=True):
-        exp_name = st.text_input("Expense Name")
-        exp_amt = st.number_input("Amount ($)", min_value=0, step=50)
-        if st.form_submit_button("Add Expense") and exp_name:
-            st.session_state.expenses[exp_name] = exp_amt
+    with st.form("add_expense", clear_on_submit=True):
+        e_name = st.text_input("Expense Type")
+        e_amount = st.number_input("Amount ($)", min_value=0, step=25)
+        if st.form_submit_button("Add Expense") and e_name:
+            st.session_state.expenses[e_name] = e_amount
 
     if st.session_state.expenses:
-        exp_df = pd.DataFrame(st.session_state.expenses.items(), columns=["Expense", "Amount"])
-        st.dataframe(exp_df, use_container_width=True)
-    total_expenses = sum(st.session_state.expenses.values())
-    st.markdown(f"**Total Monthly Expenses:** `${total_expenses:,.2f}`")
-    credit_spend_pct = st.slider("% of expenses on credit cards", 0, 100, 50, step=5) / 100
-    income_after_expenses -= total_expenses
+        df_exp = pd.DataFrame(st.session_state.expenses.items(), columns=["Type", "Amount"])
+        st.dataframe(df_exp, use_container_width=True)
+    total_exp = sum(st.session_state.expenses.values())
+    st.markdown(f"### 💰 Total Monthly Expenses: `${total_exp:,.2f}`")
+    card_pct = st.slider("% of expenses charged to credit", 0, 100, 50) / 100
+    income_left -= total_exp
 
+# ----------------- TAB 3 -------------------
 with tab3:
-    st.subheader("Credit Cards")
+    st.header("💳 Credit Cards")
     if "cards" not in st.session_state:
         st.session_state.cards = {}
     with st.form("card_form", clear_on_submit=True):
-        card_name = st.text_input("Card Name")
-        card_bal = st.number_input("Card Balance ($)", min_value=0, step=50)
-        card_apr = st.number_input("Card APR (%)", min_value=0.0, step=0.1)
-        if st.form_submit_button("Add Card") and card_name:
-            st.session_state.cards[card_name] = {"balance": card_bal, "apr": card_apr / 100}
+        name = st.text_input("Card Name")
+        balance = st.number_input("Balance ($)", min_value=0, step=50)
+        apr = st.number_input("APR (%)", min_value=0.0, step=0.1)
+        if st.form_submit_button("Add Card") and name:
+            st.session_state.cards[name] = {"balance": balance, "apr": apr / 100}
 
     if st.session_state.cards:
-        card_df = pd.DataFrame([
-            {"Card": k, "Balance": v["balance"], "APR": f"{v['apr'] * 100:.2f}%"} for k, v in st.session_state.cards.items()
+        df_cards = pd.DataFrame([
+            {"Card": k, "Balance": v["balance"], "APR": f"{v['apr']*100:.1f}%"}
+            for k, v in st.session_state.cards.items()
         ])
-        st.dataframe(card_df, use_container_width=True)
+        st.dataframe(df_cards, use_container_width=True)
+
+# ----------------- TAB 4 -------------------
+def get_tips(income, expenses, cards, contrib, reserve):
+    prompt = f"""
+    I bring home ${income:.2f} monthly, spend ${expenses:.2f}, and reserve {int(reserve*100)}%.
+    I pay ${contrib:.2f} toward credit card debt monthly across {len(cards)} cards.
+    Give me 3 high-impact budgeting or payoff suggestions.
+    """
+    try:
+        res = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a savvy credit advisor."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return res.choices[0].message.content
+    except Exception as e:
+        return f"❌ API Error: {e}"
 
 with tab4:
-    st.subheader("Results & Strategy")
-    reserve_pct = st.slider("% of leftover income to reserve", 0, 50, 20, step=5) / 100
-    credit_contribution = income_after_expenses * (1 - reserve_pct)
-    monthly_credit_reuse = total_expenses * credit_spend_pct
-    net_reduction = credit_contribution - monthly_credit_reuse
+    st.header("📊 Final Plan & Payoff Strategy")
+    reserve = st.slider("% of leftover income to reserve", 0, 50, 20) / 100
+    credit_contrib = income_left * (1 - reserve)
+    reuse = total_exp * card_pct
+    reduction = credit_contrib - reuse
 
-    total_balance = sum(c["balance"] for c in st.session_state.cards.values())
-    weighted_apr = sum(c["balance"] * c["apr"] for c in st.session_state.cards.values()) / total_balance if total_balance else 0
-    monthly_rate = weighted_apr / 12
+    bal = sum(c["balance"] for c in st.session_state.cards.values())
+    apr_wt = sum(c["balance"] * c["apr"] for c in st.session_state.cards.values()) / bal if bal else 0
+    r_month = apr_wt / 12
+    b = bal
+    m = 0
+    b_list = []
+    while b > 0 and m < 600:
+        i = b * r_month
+        b += i + reuse - credit_contrib
+        b_list.append(b)
+        if b > bal * 10: break
+        m += 1
+    payoff_months = m if b <= 0 else None
 
-    balance = total_balance
-    months = 0
-    balances = []
-    while balance > 0 and months < 600:
-        interest = balance * monthly_rate
-        balance += interest + monthly_credit_reuse - credit_contribution
-        balances.append(balance)
-        if balance > total_balance * 10:
-            break
-        months += 1
+    col1, col2 = st.columns(2)
+    col1.metric("Monthly Reused on Cards", f"${reuse:,.2f}")
+    col2.metric("Net Monthly Reduction", f"${reduction:,.2f}")
 
-    if balance <= 0:
-        st.success(f"Estimated Payoff Time: {months} months at {weighted_apr * 100:.2f}% APR")
-        df = pd.DataFrame({"Month": list(range(months)), "Balance": balances})
-        chart = alt.Chart(df).mark_line().encode(
-            x="Month",
-            y=alt.Y("Balance", title="Projected Balance ($)"),
-            tooltip=["Month", "Balance"]
-        ).properties(title="Credit Card Payoff Projection")
-        st.altair_chart(chart, use_container_width=True)
+    if payoff_months:
+        st.success(f"✅ Estimated Payoff Time: {payoff_months} months")
+        chart_data = pd.DataFrame({'Month': list(range(m)), 'Balance': b_list})
+        st.altair_chart(
+            alt.Chart(chart_data).mark_line().encode(
+                x="Month",
+                y="Balance",
+                tooltip=["Month", "Balance"]
+            ).properties(height=350, title="Credit Payoff Projection"),
+            use_container_width=True
+        )
     else:
-        st.error("You're not paying down your balance. Adjust expenses or reserve %.")
+        st.error("❌ Your debt is growing. Reconsider your expenses or contribution.")
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Net Income", f"${monthly_net_income:,.2f}")
-    col2.metric("After Expenses", f"${income_after_expenses:,.2f}")
-    col3.metric("Contribution", f"${credit_contribution:,.2f}")
+    st.divider()
+    with st.expander("🤖 Smart Budget Advice"):
+        if st.button("Get My Tips"):
+            with st.spinner("Generating insights..."):
+                st.info(get_tips(monthly_net, total_exp, st.session_state.cards, credit_contrib, reserve))
+
+    with st.expander("💬 Ask a Financial Question"):
+        q = st.text_area("Your question about debt, spending, or plans:")
+        if st.button("Ask Advisor") and q.strip():
+            with st.spinner("Thinking..."):
+                try:
+                    out = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": "You are a debt coach."},
+                            {"role": "user", "content": q.strip()}
+                        ]
+                    )
+                    st.success(out.choices[0].message.content)
+                except Exception as e:
+                    st.error(f"❌ GPT Error: {e}")
+
+st.caption("Built by Ryan Worthington • © 2025 Pay’d")
