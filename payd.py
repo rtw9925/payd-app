@@ -27,8 +27,8 @@ h1, h2, h3, h4 {
 
 st.markdown("""
 <div style='padding: 2rem; border-radius: 14px; background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #d0d0d0;'>
-    <h1 style='margin-bottom:0;'>💳 Pay’d: Your Personalized Credit Strategy</h1>
-    <p style='margin-top:0.5rem; font-size: 1.1rem;'>Smarter payoff planning. Real results. Designed for people who want to crush debt without compromising lifestyle.</p>
+    <h1 style='margin-bottom:0; color: black;'>💳 Pay’d: Your Personalized Credit Strategy</h1>
+    <p style='margin-top:0.5rem; font-size: 1.1rem; color: black;'>Smarter payoff planning. Real results. Designed for people who want to crush debt without compromising lifestyle.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -74,7 +74,7 @@ with tab1:
 
     st.markdown("### 🐝 Monthly Deductions")
     with st.container():
-        dcol1, _, dcol2 = st.columns([1.2, 0.1, 1.2])
+        dcol1, dcol2 = st.columns([1, 1])
         items = list(deductions.items())
         for i, (label, val) in enumerate(items):
             (dcol1 if i < 3 else dcol2).metric(label, f"${val:,.2f}")
