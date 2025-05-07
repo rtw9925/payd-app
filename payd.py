@@ -107,23 +107,93 @@ with tab2:
 
 # ----------------- TAB 3 -------------------
 with tab3:
+    st.markdown("""
+    <style>
+    .metric-card {
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .metric-header {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #222;
+    }
+    .debt-value {
+        font-size: 2rem;
+        color: #e53935;
+        font-weight: bold;
+    }
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-top: 1rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     st.header("💳 Credit Cards")
-    if "cards" not in st.session_state:
-        st.session_state.cards = {}
+    col1, col2 = st.columns([2, 1])
 
-    with st.form("card_form", clear_on_submit=True):
-        name = st.text_input("Card Name")
-        balance = st.number_input("Balance ($)", min_value=0, step=50)
-        apr = st.number_input("APR (%)", min_value=0.0, step=0.1)
-        if st.form_submit_button("Add Card") and name:
-            st.session_state.cards[name] = {"balance": balance, "apr": apr / 100}
+    with col1:
+        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='metric-header'>Debt</div>", unsafe_allow_html=True)
 
-    if st.session_state.cards:
-        df_cards = pd.DataFrame([
-            {"Card": k, "Balance": v["balance"], "APR": f"{v['apr']*100:.1f}%"}
-            for k, v in st.session_state.cards.items()
-        ])
-        st.dataframe(df_cards, use_container_width=True)
+        total_debt = sum(c["balance"] for c in st.session_state.cards.values()) if "cards" in st.session_state else 0
+        st.markdown(f"<div class='debt-value'>${total_debt:,.0f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<p><strong>Monthly Payment</strong><br>${credit_contrib:,.0f}</p>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # Add credit card input form
+        with st.form("card_form", clear_on_submit=True):
+            name = st.text_input("Card Name")
+            balance = st.number_input("Balance ($)", min_value=0, step=50)
+            apr = st.number_input("APR (%)", min_value=0.0, step=0.1)
+            if st.form_submit_button("Add Card") and name:
+                st.session_state.cards[name] = {"balance": balance, "apr": apr / 100}
+
+        # Table of cards
+        if st.session_state.cards:
+            df_cards = pd.DataFrame([
+                {"Card": k, "Balance": f"${v['balance']:,.0f}", "APR": f"{v['apr']*100:.1f}%"}
+                for k, v in st.session_state.cards.items()
+            ])
+            st.markdown("<div class='section-title'>Credit Cards</div>", unsafe_allow_html=True)
+            st.dataframe(df_cards, use_container_width=True, height=200)
+
+    with col2:
+        # Debt Payoff Timeline chart
+        if st.session_state.cards:
+            chart_data = pd.DataFrame({'Month': list(range(len(b_list))), 'Balance': b_list})
+            st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
+            st.markdown("<div class='metric-header'>Debt Payoff Timeline</div>", unsafe_allow_html=True)
+            st.altair_chart(
+                alt.Chart(chart_data).mark_line().encode(
+                    x="Month",
+                    y="Balance",
+                    tooltip=["Month", "Balance"]
+                ).properties(height=150),
+                use_container_width=True
+            )
+            st.markdown(f"<p>You could be debt-free in about <strong>{payoff_months} months</strong></p>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # Consolidation suggestion
+        if len(st.session_state.cards) >= 2:
+            highest_apr = max(st.session_state.cards.items(), key=lambda x: x[1]["apr"])
+            lowest_apr = min(st.session_state.cards.items(), key=lambda x: x[1]["apr"])
+            if highest_apr[1]["apr"] > lowest_apr[1]["apr"]:
+                st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
+                st.markdown("<div class='metric-header'>Consolidation Insights</div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                    <p>Consider consolidating your debt?</p>
+                    <p><strong>${highest_apr[1]['balance']:,.0f}</strong> from <strong>{highest_apr[0]}</strong> to <strong>{lowest_apr[0]}</strong></p>
+                """, unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+
 
 # ----------------- TAB 4 -------------------
 def get_tips(income, expenses, cards, contrib, reserve):
